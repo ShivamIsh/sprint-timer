@@ -1,17 +1,180 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>AI Sprint Timer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      padding: 20px;
+    }
+    .container {
+      text-align: center;
+      max-width: 800px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    #status {
+      font-size: 1.5rem;
+      margin: 20px 0;
+      min-height: 30px;
+    }
+    .upload-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 2px dashed rgba(255,255,255,0.5);
+      border-radius: 15px;
+      background: rgba(255,255,255,0.1);
+    }
+    #images {
+      display: none;
+    }
+    .upload-label {
+      display: inline-block;
+      padding: 15px 30px;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: all 0.3s;
+      margin-bottom: 15px;
+    }
+    .upload-label:hover {
+      background: rgba(255,255,255,0.4);
+      transform: translateY(-2px);
+    }
+    .btn {
+      padding: 15px 40px;
+      font-size: 1.2rem;
+      margin: 10px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: bold;
+      min-width: 180px;
+    }
+    .btn-primary {
+      background: #00d4aa;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #00b894;
+      transform: scale(1.05);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.5);
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    #timer {
+      font-size: 4rem;
+      font-weight: bold;
+      margin: 30px 0;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+      min-height: 80px;
+      font-family: 'Courier New', monospace;
+    }
+    #video {
+      border-radius: 15px;
+      margin-top: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      background: black;
+    }
+    .instructions {
+      margin-top: 30px;
+      text-align: left;
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+    .instructions h3 {
+      margin-bottom: 10px;
+      color: #00d4aa;
+    }
+    .instructions ul {
+      margin-left: 20px;
+      line-height: 1.6;
+    }
+    @media (max-width: 768px) {
+      h1 { font-size: 2rem; }
+      #timer { font-size: 3rem; }
+      .container { padding: 20px; }
+      .btn { padding: 12px 25px; font-size: 1rem; }
+    }
+  </style>
 </head>
 <body>
-  <h1 id="status">Upload Images</h1>
-  <input type="file" id="images" multiple>
-  <button onclick="uploadImages()">Upload</button>
-  <br><br>
-  <button onclick="buildIdentity()">Build Identity</button>
-  <button onclick="startRace()">Start</button>
-  <h2 id="timer">0.00</h2>
-  <video id="video" autoplay width="640" height="480"></video>
-  <script src="/js/app.js" type="module"></script>
+  <div class="container">
+    <h1>🏃‍♂️ AI Sprint Timer</h1>
+    
+    <div id="status">Upload athlete photos to start</div>
+    
+    <!-- Upload Section -->
+    <div class="upload-section">
+      <label for="images" class="upload-label">
+        📸 Select 3-5 clear photos (face + full body)
+      </label>
+    
+      <input type="file" id="images" name ="images" multiple accept="image/*">
+      <br>
+      <button id="uploadBtn" class="btn btn-primary" >Upload Photos</button>
+      
+      <button id="buildBtn" class="btn btn-secondary" disabled>Build Identity</button>
+    </div>
+    
+    <!-- Race Controls -->
+    <button id="startBtn" class="btn btn-primary" disabled>🚀 Start Race</button>
+    
+    <!-- Timer Display -->
+    <div id="timer">0.00s</div>
+    
+    <!-- Camera Feed -->
+    <video id="video" width="640" height="480" autoplay muted playsinline></video>
+    
+    <!-- Instructions -->
+    <div class="instructions">
+      <h3>📋 How to use:</h3>
+      <ul>
+        <li>Upload 3-5 recent photos of the athlete</li>
+        <li>Click "Build Identity" (AI learns the person)</li>
+        <li>Position camera straight ahead (person runs toward center)</li>
+        <li>Click "Start Race" → On your marks → Set → Go!</li>
+        <li>Timer stops when athlete crosses center line</li>
+      </ul>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <script src="/js/controller.js" type="module"></script>
 </body>
 </html>

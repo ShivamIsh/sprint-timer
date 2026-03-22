@@ -1,4 +1,4 @@
-import * as cocoSsd from "@tensirflow-models/coco-ssd";
+//import * as cocoSsd from "@tensorflow-models/coco-ssd";
 
 let model;
 

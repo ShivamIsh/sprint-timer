@@ -1,27 +1,28 @@
 const multer = require("multer");
 const path = require("path");
-// storage config
-const storage = multer.diskStorage({
-  destination: "public/uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+const fs = require("fs");
 
 
-const upload = multer({ storage }).array("images", 10);
 
 const uploadImages = (req, res)=>{
-    upload(req, res, function (err) {
-    if (err) return res.status(500).json({ error: err });
+     try {
+    // multer adds files here
+    const files = req.files;
 
-    const filePaths = req.files.map(f => "/uploads/" + f.filename);
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
 
-    res.json({
-      message: "Uploaded",
+    const filePaths = files.map(file => file.path);
+
+    res.status(200).json({
+      message: "Files uploaded successfully",
       files: filePaths
     });
-  });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 
 }
 

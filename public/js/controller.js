@@ -1,23 +1,25 @@
 import { updateStatus, updateTimer, getFiles, getVideo } from "./ui.js";
-import { loadDetectionModel, detectPersons } from "../models/detectionModel.js";
-import { loadFeatureModel, extractFeature } from "../models/featureModel.js";
+import { loadDetectionModel, detectPersons } from "../model/detectionModel.js";
+import { loadFeatureModel, extractFeature } from "../model/featureModel.js";
 import { cosineSimilarity } from "../utils/similarity.js";
-import { image } from "@tensorflow/tfjs";
+//import { image } from "@tensorflow/tfjs";
+console.log("Controller loaded");
 
 
 let identityFeatures = [];
 let uploadedPaths = [];
 
 
-export async function init() {
+ async function init() {
   updateStatus("Loading models...");
   await loadDetectionModel();
   await loadFeatureModel();
   updateStatus("Ready");
 }
 
-export async function uploadImages() {
+ async function uploadImages() {
   const files = getFiles();
+
   const formData = new FormData();
 
   for (let file of files) {
@@ -31,12 +33,13 @@ export async function uploadImages() {
   const data = await res.json();
   uploadedPaths = data.files;
   updateStatus("Uploaded!");
+  document.getElementById("buildBtn").disabled = false;
 
 
 }
 
 
-export async function buildIdentity(){
+ async function buildIdentity(){
     identityFeatures = [];
 
     for(let path of uploadedPaths){
@@ -58,7 +61,7 @@ async function startCamera(){
 }
 
 
-export async function startRace(){
+ async function startRace(){
     const video = await startCamera();
     updateStatus("On your marks"); await sleep(2000);
     updateStatus("Set"); await sleep(1000);
@@ -73,7 +76,7 @@ export async function startRace(){
             const [x, y, w, h] = p.bbox;
             let canvas = document.createElement("canvas");
             canvas.width = w;
-            canvas.geight = h;
+            canvas.height = h;
             canvas.getContext("2D").drawImage(video, x,y,w,h,0,0,w,h);
 
             let feat = extractFeature(canvas);
@@ -98,6 +101,14 @@ export async function startRace(){
 
 
 }
+
+
+document.addEventListener("DOMContentLoaded", function(){
+    init();
+    document.getElementById('uploadBtn').addEventListener('click', uploadImages);
+    document.getElementById('buildBtn').addEventListener('click', buildIdentity);
+    document.getElementById('startBtn').addEventListener('click', startRace);
+})
 
 
 
