@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Sprint Timer</title>
+</head>
+<body>
+  <h1 id="status">Upload Images</h1>
+  <input type="file" id="images" multiple>
+  <button onclick="uploadImages()">Upload</button>
+  <br><br>
+  <button onclick="buildIdentity()">Build Identity</button>
+  <button onclick="startRace()">Start</button>
+  <h2 id="timer">0.00</h2>
+  <video id="video" autoplay width="640" height="480"></video>
+  <script src="/js/app.js" type="module"></script>
+</body>
+</html>
