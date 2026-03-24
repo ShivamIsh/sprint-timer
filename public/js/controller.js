@@ -3,7 +3,11 @@ import { loadDetectionModel, detectPersons } from "../model/detectionModel.js";
 import { loadFeatureModel, extractFeature } from "../model/featureModel.js";
 import { cosineSimilarity } from "../utils/similarity.js";
 //import { image } from "@tensorflow/tfjs";
+
 console.log("Controller loaded");
+let raceInterval = null;
+let startTime = null;
+let endTime = null;
 
 
 let identityFeatures = [];
@@ -47,9 +51,28 @@ let uploadedPaths = [];
     for(let path of uploadedPaths){
         let img = new Image();
         img.src = path;
+        
 
         await new Promise(r => img.onload = r);
-        identityFeatures.push(await extractFeature(img))
+
+         // 🔥 Detect persons in image
+        const persons = await detectPersons(img);
+
+        if (persons.length === 0) {
+            console.warn("No person detected in:", path);
+            continue;
+        }
+
+        // 👉 Take first detected person
+        const [x, y, w, h] = persons[0].bbox;
+
+        // 🔥 Crop person
+        let canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+
+        canvas.getContext("2d").drawImage(img, x, y, w, h, 0, 0, w, h);
+        identityFeatures.push(await extractFeature(canvas))
     }
 
     console.log("identity built");
@@ -57,6 +80,7 @@ let uploadedPaths = [];
     updateStatus("Identity Ready!");
 
 }
+
 
 async function startCamera(){
     const video = getVideo();
@@ -72,9 +96,9 @@ async function startCamera(){
     updateStatus("Set"); await sleep(1000);
     updateStatus("Go!");
 
-    let start = Date.now();
-    const interval = setInterval(async ()=>{
-        updateTimer(((Date.now() - start)/1000).toFixed(2));
+    startTime = Date.now();
+    raceInterval = setInterval(async ()=>{
+        updateTimer(((Date.now() - startTime)/1000).toFixed(2));
         const persons = await detectPersons(video);
 
         for(let p of persons){
@@ -82,7 +106,7 @@ async function startCamera(){
             let canvas = document.createElement("canvas");
             canvas.width = w;
             canvas.height = h;
-            canvas.getContext("2D").drawImage(video, x,y,w,h,0,0,w,h);
+            canvas.getContext("2d").drawImage(video, x,y,w,h,0,0,w,h);
 
             let feat = await extractFeature(canvas);
             for(let idFeat of identityFeatures){
@@ -92,19 +116,41 @@ async function startCamera(){
                     let width = video.videoWidth;
 
                     if (center > width * 0.4 && center < width * 0.6) {
-                        clearInterval(interval);
+                        clearInterval(raceInterval);
+                        raceInterval = null;
                         updateStatus("Finished!");
                         return;
                     }
-
 
                 }
             }
 
         }
-    }, 100);
+    }, 150);
+
+}
 
 
+
+export function resetRace(){
+    // stop interval
+    if (raceInterval) {
+        clearInterval(raceInterval);
+        raceInterval = null;
+    }
+
+    // reset timer
+    updateTimer("0.00");
+
+    // reset status
+    updateStatus("Reset. Ready to start again.");
+
+    // clear bounding boxes (if using test mode)
+    const canvas = document.getElementById("overlay");
+    if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 }
 
 
@@ -116,13 +162,12 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById('uploadBtn').addEventListener('click', uploadImages);
     document.getElementById('buildBtn').addEventListener('click', buildIdentity);
     document.getElementById('startBtn').addEventListener('click', startRaceWithBoxes);
+    document.getElementById('resetBtn').addEventListener('click', resetRace);
 })
 
 
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-
 
 
 
@@ -157,10 +202,10 @@ export async function startRaceWithBoxes(){
     updateStatus("Set"); await sleep(1000);
     updateStatus("Go!");
 
-    let start = Date.now();
+    startTime = Date.now();
 
-    const interval = setInterval(async ()=>{
-        updateTimer(((Date.now() - start)/1000).toFixed(2));
+    raceInterval = setInterval(async ()=>{
+        updateTimer(((Date.now() - startTime)/1000).toFixed(2));
 
         const persons = await detectPersons(video);
 
@@ -186,12 +231,23 @@ export async function startRaceWithBoxes(){
                     break;
                 }
             }
+            if (isMatch) {
+            let center = (x + w) / 2;
+            let width = video.videoWidth;
+
+            if (center > width * 0.4 && center < width * 0.6) {
+                clearInterval(raceInterval);
+                raceInterval = null;
+                updateStatus("Finished!");
+                return;
+                }
+            }
 
             matches.push(isMatch);
         }
 
         drawBoxes(persons, matches);
 
-    }, 100);
+    }, 150);
 }
 
