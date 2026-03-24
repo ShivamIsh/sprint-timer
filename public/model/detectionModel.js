@@ -7,8 +7,8 @@ export async function loadDetectionModel(){
 }
 
 export async function detectPersons(video){
-    const predections = await model.detect(video);
+    const predictions = await model.detect(video);
 
-    return prediction.filter(p => p.class ==="person");
+    return predictions.filter(p => p.class ==="person");
 }
 

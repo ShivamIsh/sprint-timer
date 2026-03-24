@@ -16,7 +16,7 @@ app.use("/uploads", express.static("public/uploads"));
 app.use("/upload", uploadRoutes)
 
 app.get("/", (req, res)=>{
-    res.render("index.ejs");
+    res.render("test.ejs");
 });
 
 

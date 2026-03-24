@@ -13,7 +13,7 @@ const uploadImages = (req, res)=>{
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const filePaths = files.map(file => file.path);
+    const filePaths = files.map(file => "/uploads/"+file.filename);
 
     res.status(200).json({
       message: "Files uploaded successfully",

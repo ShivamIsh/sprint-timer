@@ -159,7 +159,10 @@
     <div id="timer">0.00s</div>
     
     <!-- Camera Feed -->
-    <video id="video" width="640" height="480" autoplay muted playsinline></video>
+    <div style="position: relative; display: inline-block;">
+  <video id="video" width="640" height="480" autoplay muted playsinline></video>
+  <canvas id="overlay" width="640" height="480" style="position:absolute; top:0; left:0;"></canvas>
+</div>
     
     <!-- Instructions -->
     <div class="instructions">

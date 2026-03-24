@@ -15,6 +15,8 @@ let uploadedPaths = [];
   await loadDetectionModel();
   await loadFeatureModel();
   updateStatus("Ready");
+
+
 }
 
  async function uploadImages() {
@@ -47,10 +49,13 @@ let uploadedPaths = [];
         img.src = path;
 
         await new Promise(r => img.onload = r);
-        identityFeatures.push(extractFeature(image))
+        identityFeatures.push(await extractFeature(img))
     }
 
+    console.log("identity built");
+    document.getElementById("startBtn").disabled = false;
     updateStatus("Identity Ready!");
+
 }
 
 async function startCamera(){
@@ -79,7 +84,7 @@ async function startCamera(){
             canvas.height = h;
             canvas.getContext("2D").drawImage(video, x,y,w,h,0,0,w,h);
 
-            let feat = extractFeature(canvas);
+            let feat = await extractFeature(canvas);
             for(let idFeat of identityFeatures){
                 let sim = cosineSimilarity(feat, idFeat);
                 if(sim >0.7){
@@ -104,13 +109,89 @@ async function startCamera(){
 
 
 document.addEventListener("DOMContentLoaded", function(){
+    console.log("started")
     init();
+    console.log("initialised")
+
     document.getElementById('uploadBtn').addEventListener('click', uploadImages);
     document.getElementById('buildBtn').addEventListener('click', buildIdentity);
-    document.getElementById('startBtn').addEventListener('click', startRace);
+    document.getElementById('startBtn').addEventListener('click', startRaceWithBoxes);
 })
 
 
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+
+
+
+
+// testing 
+
+
+function drawBoxes(persons, matches, video) {
+    const canvas = document.getElementById("overlay");
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < persons.length; i++) {
+        const [x, y, w, h] = persons[i].bbox;
+
+        // Green if matched, red otherwise
+        if (matches[i]) {
+            ctx.strokeStyle = "green";
+        } else {
+            ctx.strokeStyle = "red";
+        }
+
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, w, h);
+    }
+}
+
+
+export async function startRaceWithBoxes(){
+    const video = await startCamera();
+    updateStatus("On your marks"); await sleep(2000);
+    updateStatus("Set"); await sleep(1000);
+    updateStatus("Go!");
+
+    let start = Date.now();
+
+    const interval = setInterval(async ()=>{
+        updateTimer(((Date.now() - start)/1000).toFixed(2));
+
+        const persons = await detectPersons(video);
+
+        let matches = [];
+
+        for(let p of persons){
+            const [x, y, w, h] = p.bbox;
+
+            let canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+
+            canvas.getContext("2d").drawImage(video, x, y, w, h, 0, 0, w, h);
+
+            let feat = await extractFeature(canvas);
+
+            let isMatch = false;
+
+            for(let idFeat of identityFeatures){
+                let sim = cosineSimilarity(feat, idFeat);
+                if(sim > 0.7){
+                    isMatch = true;
+                    break;
+                }
+            }
+
+            matches.push(isMatch);
+        }
+
+        drawBoxes(persons, matches);
+
+    }, 100);
+}
 
